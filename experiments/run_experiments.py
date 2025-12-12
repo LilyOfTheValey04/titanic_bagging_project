@@ -32,43 +32,52 @@ X = data[features].values
 y = data[target].values
 
 # Split dataset
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=42
-)
+n_runs = 10
+acc_dt_list, acc_bag_list, acc_rf_list = [], [], []
 
-# Train decision tree
-print("Training Decision Tree...")
-tree = DecisionTree(max_depth=5)
-tree.fit(X_train, y_train)
-y_pred_tree = tree.predict(X_test)
-acc_dt = accuracy_score(y_test, y_pred_tree)
+for i in range(n_runs):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=i)
 
-# Train bagging classifier
-print("Training Bagging Classifier...")
-bagging = BaggingClassifier(base_estimator=DecisionTree, n_estimators=20, max_depth=5)
-bagging.fit(X_train, y_train)
-y_pred_bagging = bagging.predict(X_test)
-acc_bag = accuracy_score(y_test, y_pred_bagging)
+    # Train decision tree
+    print("Training Decision Tree...")
+    tree = DecisionTree(max_depth=None)
+    tree.fit(X_train, y_train)
+    y_pred_tree = tree.predict(X_test)
+    acc_dt = accuracy_score(y_test, y_pred_tree)
+    acc_dt_list.append(acc_dt)
 
-# Train random forest
-print("Training Random Forest...")
-rf = RandomForestClassifier(n_estimators=20, max_depth=5, max_features='sqrt')
-rf.fit(X_train, y_train)
-y_pred_rf = rf.predict(X_test)
-acc_rf = accuracy_score(y_test, y_pred_rf)
+    # Train bagging classifier
+    print("Training Bagging Classifier...")
+    bagging = BaggingClassifier(base_estimator=DecisionTree, n_estimators=150, max_depth=None)
+    bagging.fit(X_train, y_train)
+    y_pred_bagging = bagging.predict(X_test)
+    acc_bag = accuracy_score(y_test, y_pred_bagging)
+    acc_bag_list.append(acc_bag)
+
+    # Train random forest
+    print("Training Random Forest...")
+    rf = RandomForestClassifier(n_estimators=150, max_depth=None, max_features='sqrt')
+    rf.fit(X_train, y_train)
+    y_pred_rf = rf.predict(X_test)
+    acc_rf = accuracy_score(y_test, y_pred_rf)
+    acc_rf_list.append(acc_rf)
 
 # Evaluate all models
 print("Decision Tree Accuracy:", acc_dt)
 print("Bagging Accuracy:", acc_bag)
 print("Random Forest Accuracy:", acc_rf)
 
+# Compute mean and standard deviation
+print(f"Decision Tree Accuracy: {np.mean(acc_dt_list):.3f} ± {np.std(acc_dt_list):.3f}")
+print(f"Bagging Accuracy: {np.mean(acc_bag_list):.3f} ± {np.std(acc_bag_list):.3f}")
+print(f"Random Forest Accuracy: {np.mean(acc_rf_list):.3f} ± {np.std(acc_rf_list):.3f}")
+
 # Plot a bar chart
 models = ['Decision Tree', 'Bagging', 'Random Forest']
-accuracy = [accuracy_score(y_test, y_pred_tree),
-            accuracy_score(y_test, y_pred_bagging),
-            accuracy_score(y_test, y_pred_rf)]
+accuracy_mean = [np.mean(acc_dt_list), np.mean(acc_bag_list), np.mean(acc_rf_list)]
+accuracy_std = [np.std(acc_dt_list), np.std(acc_bag_list), np.std(acc_rf_list)]
 
-plt.bar(models, accuracy)
+plt.bar(models, accuracy_mean, yerr=accuracy_std, capsize=5)
 plt.ylabel('Accuracy')
 plt.title('Model Comparison on Titanic Dataset')
 plt.show()
